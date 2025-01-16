@@ -100,28 +100,36 @@ class FlutterNaverLoginPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
     NaverIdLoginSDK.showDevelopersLog(true)
 
     try {
-      flutterPluginBinding.applicationContext?.packageName?.let {
-        val bundle = flutterPluginBinding.applicationContext?.packageManager?.getApplicationInfo(it, PackageManager.GET_META_DATA)?.metaData
+    val clientId = BuildConfig.naverClientId
+    val clientSecret = BuildConfig.naverClientSecret
+    val clientName = BuildConfig.naverClientName
 
-        if(bundle != null) {
-          OAUTH_CLIENT_ID = bundle?.getString("com.naver.sdk.clientId").toString();
-          OAUTH_CLIENT_SECRET = bundle?.getString("com.naver.sdk.clientSecret").toString();
-          OAUTH_CLIENT_NAME = bundle?.getString("com.naver.sdk.clientName").toString();
-          try {
-            NaverIdLoginSDK.initialize(flutterPluginBinding.applicationContext, OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET, OAUTH_CLIENT_NAME);
-          } catch (e: Exception) {
+    if (!clientId.isNullOrEmpty() && !clientSecret.isNullOrEmpty() && !clientName.isNullOrEmpty()) {
+        try {
+            NaverIdLoginSDK.initialize(
+                flutterPluginBinding.applicationContext,
+                clientId,
+                clientSecret,
+                clientName
+            )
+        } catch (e: Exception) {
+            // 암호화된 Preferences 삭제 후 재시도
             try {
-              deleteCurrentEncryptedPreferences(flutterPluginBinding.applicationContext)
-              NaverIdLoginSDK.initialize(flutterPluginBinding.applicationContext, OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET, OAUTH_CLIENT_NAME);  
+                deleteCurrentEncryptedPreferences(flutterPluginBinding.applicationContext)
+                NaverIdLoginSDK.initialize(
+                    flutterPluginBinding.applicationContext,
+                    clientId,
+                    clientSecret,
+                    clientName
+                )
             } catch (e: Exception) {
-              e.printStackTrace()
+                e.printStackTrace()
             }
-          }
         }
-      }
-    } catch (e: Exception) {
-      e.printStackTrace()
     }
+} catch (e: Exception) {
+    e.printStackTrace()
+}
   }
 
   override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
