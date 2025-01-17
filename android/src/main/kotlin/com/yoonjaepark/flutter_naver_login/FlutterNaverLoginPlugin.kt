@@ -100,36 +100,43 @@ class FlutterNaverLoginPlugin: FlutterPlugin, MethodCallHandler, ActivityAware {
     NaverIdLoginSDK.showDevelopersLog(true)
 
     try {
-    val clientId = BuildConfig.naverClientId
-    val clientSecret = BuildConfig.naverClientSecret
-    val clientName = BuildConfig.naverClientName
+      // manifestPlaceholders 값을 사용하기 위해 applicationContext에서 metadata 가져오기
+      val applicationInfo: ApplicationInfo = applicationContext.packageManager.getApplicationInfo(
+        applicationContext.packageName,
+        PackageManager.GET_META_DATA
+      )
+      val bundle: Bundle = applicationInfo.metaData
 
-    if (!clientId.isNullOrEmpty() && !clientSecret.isNullOrEmpty() && !clientName.isNullOrEmpty()) {
+      val clientId = bundle.getString("naverClientId") ?: ""
+      val clientSecret = bundle.getString("naverClientSecret") ?: ""
+      val clientName = bundle.getString("naverClientName") ?: ""
+
+      if (clientId.isNotEmpty() && clientSecret.isNotEmpty() && clientName.isNotEmpty()) {
         try {
-            NaverIdLoginSDK.initialize(
-                flutterPluginBinding.applicationContext,
-                clientId,
-                clientSecret,
-                clientName
-            )
+          NaverIdLoginSDK.initialize(
+            applicationContext,
+            clientId,
+            clientSecret,
+            clientName
+          )
         } catch (e: Exception) {
-            // 암호화된 Preferences 삭제 후 재시도
-            try {
-                deleteCurrentEncryptedPreferences(flutterPluginBinding.applicationContext)
-                NaverIdLoginSDK.initialize(
-                    flutterPluginBinding.applicationContext,
-                    clientId,
-                    clientSecret,
-                    clientName
-                )
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
+          // 암호화된 Preferences 삭제 후 재시도
+          try {
+            deleteCurrentEncryptedPreferences(applicationContext)
+            NaverIdLoginSDK.initialize(
+              applicationContext,
+              clientId,
+              clientSecret,
+              clientName
+            )
+          } catch (e: Exception) {
+            e.printStackTrace()
+          }
         }
+      }
+    } catch (e: Exception) {
+      e.printStackTrace()
     }
-} catch (e: Exception) {
-    e.printStackTrace()
-}
   }
 
   override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
